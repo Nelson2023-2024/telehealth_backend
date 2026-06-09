@@ -123,3 +123,33 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True, # Works with the above — the old refresh token is added to a blacklist so it can't be reused, even if someone intercepts it.
     'UPDATE_LAST_LOGIN': True, # Updates the last_login field in the User model every time someone logs in via JWT.
 }
+
+REST_FRAMEWORK = {
+    # Tells Django how to verify who the user is. Here it uses JWT — so when a request comes in, DRF checks the Authorization: Bearer <token> header to identify the user.
+    'DEFAULT_AUTHENTICATION_CLASSES':(
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+
+    # Tells Django who is allowed in. IsAuthenticated means every API endpoint is blocked by default unless the user is logged in. You can override this per view.
+    'DEFAULT_PERMISSION_CLASSES':[
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    # When an endpoint returns a list (e.g. all users), it won't dump everything at once. It splits results into pages of 20 and you navigate with ?page=1, ?page=2 etc.
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+
+    #Controls the format of API responses. JSONRenderer means all responses come back as JSON only — no browsable HTML API.
+    'DEFAULT_RENDERER_CLASSES':[
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    # Rate limiting — prevents abuse/spam of your API.
+    'DEFAULT_THROTTLE_CLASSES':[
+        'rest_framework.throttling.AnonRateThrottle', # limits unauthenticated users
+        'rest_framework.throttling.UserRateThrottle' # limits logged-in users
+    ],
+    'DEFAULT_THROTTLE_RATES':{
+        'anon': '10/min',
+        'user': '60/min',
+    }
+
+}
