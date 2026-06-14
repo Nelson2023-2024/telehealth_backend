@@ -5,3 +5,10 @@ django-cors-headers
 pillow
 python-decouple
 python-dotenv
+
+
+python-dateutil
+
+
+autopep8
+black
