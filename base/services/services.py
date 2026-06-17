@@ -4,6 +4,9 @@ All model services for the telehealth system.
 Every model has a corresponding service that inherits from ServiceBase.
 """
 from base.services.servicebase import ServiceBase
+import logging
+
+lgr = logging.getLogger(__name__)
 
 # Base models
 from base.models import State, Country
@@ -40,6 +43,31 @@ class CountryService(ServiceBase[Country]):
 class UserService(ServiceBase[User]):
     """Handles CRUD operations for the User model."""
     manager = User.objects
+
+    def create_user(self, **kwargs):
+        """
+        Creates a user with a hashed password.
+        Uses Django's create_user() which hashes the password properly.
+        """
+        try:
+            return self.manager.create_user(**kwargs)
+        except Exception as e:
+            lgr.exception(
+                '[User] CREATE_USER failed. Data: %s | Error: %s',
+                kwargs, str(e)
+            )
+            return None
+
+    def create_superuser(self, **kwargs):
+        """Creates a superuser with a hashed password and admin privileges."""
+        try:
+            return self.manager.create_superuser(**kwargs)
+        except Exception as e:
+            lgr.exception(
+                '[User] CREATE_SUPERUSER failed. Data: %s | Error: %s',
+                kwargs, str(e)
+            )
+            return None
 
 
 class RoleService(ServiceBase[Role]):

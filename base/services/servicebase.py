@@ -90,7 +90,7 @@ class ServiceBase(Generic[T]):
             )
         return None
 
-    def delete(self, pk):
+    def delete(self, pk) -> Optional[T]:
         try:
             from base.models import State
             record = self.get(id=pk)
