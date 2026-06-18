@@ -5,7 +5,9 @@ from django.db.models import QuerySet, Manager
 
 lgr = logging.getLogger(__name__)
 
-T = TypeVar('T', bound=models.Model)  # T will be some model, I just don't know which one yet
+T = TypeVar(
+    "T", bound=models.Model
+)  # T will be some model, I just don't know which one yet
 
 
 # 1. TypeVar Think of it as a placeholder for a type that gets filled in later.
@@ -13,10 +15,11 @@ T = TypeVar('T', bound=models.Model)  # T will be some model, I just don't know 
 # 3. Optional Means the return value is either the thing or None:
 # 4. QuerySet Just the proper type hint for what filter() returns:
 
+
 class ServiceBase(Generic[T]):
     """
-       Base service class providing safe CRUD operations.
-       All services inherit from this to avoid repeating try/catch logic.
+    Base service class providing safe CRUD operations.
+    All services inherit from this to avoid repeating try/catch logic.
     """
 
     manager: Manager[T] = None
@@ -33,7 +36,7 @@ class ServiceBase(Generic[T]):
         try:
             return self.manager.model.__name__
         except Exception:
-            return 'Unknown Model'
+            return "Unknown Model"
 
     def get(self, *args, **kwargs) -> Optional[T]:
         try:
@@ -41,13 +44,14 @@ class ServiceBase(Generic[T]):
                 return self.manager.get(*args, **kwargs)
         except self.manager.model.DoesNotExist:
             lgr.warning(
-                '[%s] Record not found. Filters: %s',
-                self._model_name(), kwargs
+                "[%s] Record not found. Filters: %s", self._model_name(), kwargs
             )
         except Exception as e:
             lgr.exception(
-                '[%s] GET failed. Filters: %s | Error: %s',
-                self._model_name(), kwargs, str(e)
+                "[%s] GET failed. Filters: %s | Error: %s",
+                self._model_name(),
+                kwargs,
+                str(e),
             )
         return None
 
@@ -58,8 +62,10 @@ class ServiceBase(Generic[T]):
                 return self.manager.filter(*args, **kwargs)
         except Exception as e:
             lgr.exception(
-                '[%s] FILTER failed. Filters: %s | Error: %s',
-                self._model_name(), kwargs, str(e)
+                "[%s] FILTER failed. Filters: %s | Error: %s",
+                self._model_name(),
+                kwargs,
+                str(e),
             )
         return None
 
@@ -69,8 +75,10 @@ class ServiceBase(Generic[T]):
                 return self.manager.create(**kwargs)
         except Exception as e:
             lgr.exception(
-                '[%s] CREATE failed. Data: %s | Error: %s',
-                self._model_name(), kwargs, str(e)
+                "[%s] CREATE failed. Data: %s | Error: %s",
+                self._model_name(),
+                kwargs,
+                str(e),
             )
         return None
 
@@ -85,23 +93,29 @@ class ServiceBase(Generic[T]):
                 return record
         except Exception as e:
             lgr.exception(
-                '[%s] UPDATE failed. PK: %s | Data: %s | Error: %s',
-                self._model_name(), pk, kwargs, str(e)
+                "[%s] UPDATE failed. PK: %s | Data: %s | Error: %s",
+                self._model_name(),
+                pk,
+                kwargs,
+                str(e),
             )
         return None
 
     def delete(self, pk) -> Optional[T]:
         try:
             from base.models import State
+
             record = self.get(id=pk)
             if record is not None:
                 record.is_active = False
-                record.state = State.objects.get(code='disabled')
-                record.save(update_fields=['is_active', 'state'])
+                record.state = State.objects.get(code="disabled")
+                record.save(update_fields=["is_active", "state"])
                 return record
         except Exception as e:
             lgr.exception(
-                '[%s] DELETE (soft) failed. PK: %s | Error: %s',
-                self._model_name(), pk, str(e)
+                "[%s] DELETE (soft) failed. PK: %s | Error: %s",
+                self._model_name(),
+                pk,
+                str(e),
             )
         return None
