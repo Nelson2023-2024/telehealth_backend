@@ -82,7 +82,6 @@ class UserSerilizer(BaseModelSerializer):
             "full_name",
             "role",
             "is_online",
-            "is_verified",
             "is_staff",
             "has_verified_email",
             "email_verified_at",
