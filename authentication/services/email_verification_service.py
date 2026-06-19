@@ -21,7 +21,9 @@ class EmailVerificationOrchestrator:
     @staticmethod
     def send_verification_email(user):
         try:
-            existing_token = EmailVerificationTokenService().filter(user=user, is_used=False)
+            existing_token = EmailVerificationTokenService().filter(
+                user=user, is_used=False
+            )
 
             if existing_token is not None:
                 existing_token.update(is_used=True)
@@ -75,3 +77,4 @@ class EmailVerificationOrchestrator:
             return True
         except Exception as e:
             logger.error(f"An error occurred sending verification email to {user}: {e}")
+            return False
