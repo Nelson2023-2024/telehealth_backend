@@ -74,14 +74,17 @@ class AuthenticationOrchestrator:
             if user is None:
                 return None, "Invalid email or password"  # vague on purpose — security
 
-            if not user.is_active and user.state__code != "Active":
+            if not user.is_active and user.state.code != "Active":
                 return None, "Account is disabled, contact support"
 
             # Verify password
-            user = authenticate(email=email, password=password)
+            authenticated_user = authenticate(email=email, password=password)
+
+            if authenticated_user is None:
+                return None, "Invalid email or password"
 
             # Generate tokens
-            refresh = RefreshToken.for_user(user)
+            refresh = RefreshToken.for_user(authenticated_user)
             print(refresh)
 
             tokens = {
@@ -93,7 +96,7 @@ class AuthenticationOrchestrator:
             # Update last seen
             user.last_seen = timezone.now()
 
-            user.save(update_fields=["is_online", "last_seen"])
+            user.save(update_fields=["last_seen"])
 
             logger.info(f"[Login] User logged in: {email}")
             return tokens, None
@@ -103,8 +106,33 @@ class AuthenticationOrchestrator:
             return None, f"An unexpected error occurred: {e}"
 
     @staticmethod
-    def update_user_status(user: User, is_online = True):
+    def update_user_status(user: User, is_online=True):
         try:
-            user.
+            user.is_online = is_online
+            user.last_seen = timezone.now()
+            user.save(update_fields=["is_online", "last_seen"])
+
+            cache_key = f"user_status_{user.id}"  # laster cache in redis
+
+            # With cache — read from memory instead of hitting the DB
+            cache.set(
+                cache_key,
+                {"is_online": is_online, "last_seen": user.last_seen.isoformat()},
+                timeout=3600,
+            )
+
+            logger.debug(f"Updated user status for {user.email}: online = {is_online} ")
         except Exception as e:
-            pass
+            logger.error(f"Failed to update user status for {user.email} : {str(e)}")
+
+    @staticmethod
+    def get_user_online_status(user_id):
+        cache_key = f"user_status_{user_id}"
+        cached = cache.get(cache_key)
+
+        if cached is not None:
+            return cached["is_online"]  # fast — no DB hit
+
+        # Cache miss (expired or never set) — fall back to DB
+        user = UserService().get(id=user_id, active_only=False)
+        return user.is_online if user else False
