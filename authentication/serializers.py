@@ -68,7 +68,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         )  # create_user() hashes the password:
 
 
-class UserSerilizer(BaseModelSerializer):
+class UserSerializer(BaseModelSerializer):
     full_name = serializers.ReadOnlyField()
     # SerializerMethodField lets you add a custom computed field that doesn't exist directly on the model.
     has_verified_email = serializers.SerializerMethodField()
