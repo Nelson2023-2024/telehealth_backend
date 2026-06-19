@@ -89,7 +89,7 @@ class ServiceBase(Generic[T]):
 
     def create(self, **kwargs) -> Optional[T]:
         """
-            Create a record. Defaults state to Active if not provided.
+        Create a record. Defaults state to Active if not provided.
         """
         try:
             if self.manager is not None:
@@ -109,8 +109,8 @@ class ServiceBase(Generic[T]):
 
     def update(self, pk, **kwargs) -> Optional[T]:
         """
-           Update a record by pk. Works regardless of active/state status —
-           if you have the pk you should be able to update it.
+        Update a record by pk. Works regardless of active/state status —
+        if you have the pk you should be able to update it.
         """
         try:
             record = self.get(id=pk, active_only=False)
@@ -138,8 +138,8 @@ class ServiceBase(Generic[T]):
 
     def delete(self, pk) -> Optional[T]:
         """
-          Soft delete a record by setting is_active=False and state=Disabled.
-          Works regardless of current active/state status.
+        Soft delete a record by setting is_active=False and state=Disabled.
+        Works regardless of current active/state status.
         """
         try:
             from base.models import State

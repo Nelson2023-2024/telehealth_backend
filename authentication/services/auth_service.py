@@ -1,3 +1,5 @@
+import email
+
 from django.contrib.auth import authenticate
 from django.core.cache import cache
 from django.utils import timezone
@@ -17,7 +19,7 @@ from django.core.mail import send_mail
 logger = logging.getLogger(__name__)
 
 
-class AuthenticationService:
+class AuthenticationOrchestrator:
     @staticmethod
     def register_user(email, password, first_name, last_name, role="patient"):
         try:
@@ -66,7 +68,7 @@ class AuthenticationService:
             return None, str(e)
 
     @staticmethod
-    def login_user(email, password):
+    def authenticate_user(email, password):
         try:
             user = UserService().get(email=email)
             if user is None:
@@ -80,18 +82,29 @@ class AuthenticationService:
 
             # Generate tokens
             refresh = RefreshToken.for_user(user)
+            print(refresh)
 
             tokens = {
+                "user": user,
                 "refresh_token": str(refresh),
                 "access_token": str(refresh.access_token),
             }
 
             # Update last seen
-            user.update_online_status(is_online=True)
+            user.last_seen = timezone.now()
+
+            user.save(update_fields=["is_online", "last_seen"])
 
             logger.info(f"[Login] User logged in: {email}")
             return tokens, None
 
         except Exception as e:
             logger.exception(f"[Login] Unexpected error for {email}: {e}")
-            return None, "An unexpected error occurred"
+            return None, f"An unexpected error occurred: {e}"
+
+    @staticmethod
+    def update_user_status(user: User, is_online = True):
+        try:
+            user.
+        except Exception as e:
+            pass
