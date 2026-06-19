@@ -91,3 +91,81 @@ def register(request: Request):
         )
     except Exception as e:
         return ResponseProvider.handle_exception(e)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def login(request: Request):
+    try:
+        serializer = LoginSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return ResponseProvider.validation_error(serializer.errors)
+
+        auth_data, auth_error = AuthenticationOrchestrator.authenticate_user(
+            email=serializer.validated_data["email"],
+            password=serializer.validated_data["password"],
+        )
+
+        # Step 3 — handle failed authentication
+        if not auth_data:
+            return ResponseProvider.unauthorized(
+                error=auth_error or "Invalid email or password"
+            )
+
+        AuthenticationOrchestrator.update_user_status(auth_data["user"], is_online=True)
+
+        return ResponseProvider.success(
+            message="Login successful",
+            data={
+                "user": UserSerializer(auth_data["user"]).data,
+                "access_token": auth_data["access_token"],
+                "refresh_token": auth_data["refresh_token"],
+            },
+        )
+    except Exception as ex:
+        return ResponseProvider.handle_exception(ex)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def logout(request: Request):
+    refresh_token = request.data.get("refresh_token")
+
+    # Step 1 — blacklist refresh token if provided
+    if refresh_token:
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except (TokenError, InvalidToken) as e:
+            logger.warning(f"Logout token issue for {request.user.email}: {str(e)}")
+
+    # Step 2 — update user status
+    AuthenticationOrchestrator.update_user_status(request.user, is_online=False)
+
+    return ResponseProvider.success(message="Logged out successfully")
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def validate_token(request: Request):
+    try:
+        user = request.user
+        AuthenticationOrchestrator.update_user_status(user, is_online=True)
+
+        return ResponseProvider.success(
+            message="Token is valid",
+            data={
+                "user": UserSerializer(user).data,
+            },
+        )
+    except Exception as ex:
+        return ResponseProvider.bad_request(
+            message="Token validation failed", error=str(ex)
+        )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def user_profile(request: Request):
+    return ResponseProvider().success(data={"user": UserSerializer(request.user).data})

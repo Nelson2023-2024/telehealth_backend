@@ -85,7 +85,7 @@ class AuthenticationOrchestrator:
 
             # Generate tokens
             refresh = RefreshToken.for_user(authenticated_user)
-            print(refresh)
+            # print(refresh)
 
             tokens = {
                 "user": user,
