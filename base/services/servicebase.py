@@ -38,9 +38,17 @@ class ServiceBase(Generic[T]):
         except Exception:
             return "Unknown Model"
 
-    def get(self, *args, **kwargs) -> Optional[T]:
+    def get(self, *args, active_only: bool = True, **kwargs) -> Optional[T]:
+        """
+        Get a single record. By default only returns active records
+        (is_active=True and state=Active).
+        Pass active_only=False to search regardless of status.
+        """
         try:
             if self.manager is not None:
+                if active_only:
+                    kwargs.setdefault("is_active", True)
+                    kwargs.setdefault("state__name", "Active")
                 return self.manager.get(*args, **kwargs)
         except self.manager.model.DoesNotExist:
             lgr.warning(
@@ -56,9 +64,19 @@ class ServiceBase(Generic[T]):
         return None
 
     # filter() always returns a QuerySet in Django
-    def filter(self, *args, **kwargs) -> Optional[QuerySet[T]]:
+    def filter(
+        self, *args, active_only: bool = True, **kwargs
+    ) -> Optional[QuerySet[T]]:
+        """
+        Filter records. By default only returns active records
+        (is_active=True and state=Active).
+        Pass active_only=False to include inactive/disabled records.
+        """
         try:
             if self.manager is not None:
+                if active_only:
+                    kwargs.setdefault("is_active", True)
+                    kwargs.setdefault("state__name", "Active")
                 return self.manager.filter(*args, **kwargs)
         except Exception as e:
             lgr.exception(
@@ -72,6 +90,10 @@ class ServiceBase(Generic[T]):
     def create(self, **kwargs) -> Optional[T]:
         try:
             if self.manager is not None:
+                if "state" not in kwargs and "state_id" not in kwargs:
+                    from base.models import State
+
+                    kwargs["state_id"] = State.default_state()
                 return self.manager.create(**kwargs)
         except Exception as e:
             lgr.exception(
@@ -84,13 +106,19 @@ class ServiceBase(Generic[T]):
 
     def update(self, pk, **kwargs) -> Optional[T]:
         try:
-            record = self.get(id=pk)
-            if record is not None:
-                for k, v in kwargs.items():
-                    setattr(record, k, v)
-                record.save()
-                record.refresh_from_db()
-                return record
+            record = self.get(id=pk, active_only=False)
+            if record is None:
+                lgr.warning(
+                    "[%s] UPDATE skipped — record not found. PK: %s",
+                    self._model_name(),
+                    pk,
+                )
+                return None
+            for k, v in kwargs.items():
+                setattr(record, k, v)
+            record.save()
+            record.refresh_from_db()
+            return record
         except Exception as e:
             lgr.exception(
                 "[%s] UPDATE failed. PK: %s | Data: %s | Error: %s",
@@ -105,12 +133,18 @@ class ServiceBase(Generic[T]):
         try:
             from base.models import State
 
-            record = self.get(id=pk)
-            if record is not None:
-                record.is_active = False
-                record.state = State.objects.get(code="disabled")
-                record.save(update_fields=["is_active", "state"])
-                return record
+            record = self.get(id=pk, active_only=False)
+            if record is None:
+                lgr.warning(
+                    "[%s] DELETE skipped — record not found. PK: %s",
+                    self._model_name(),
+                    pk,
+                )
+                return None
+            record.is_active = False
+            record.state_id = State.disabled_state()
+            record.save(update_fields=["is_active", "state"])
+            return record
         except Exception as e:
             lgr.exception(
                 "[%s] DELETE (soft) failed. PK: %s | Error: %s",
