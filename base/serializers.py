@@ -15,6 +15,7 @@ Job 2 — outgoing data (response): Django object → JSON
 # → inherit BaseModelSerializer or GenericBaseModelSerializer
 """
 
+
 class BaseModelSerializer(serializers.ModelSerializer):
     """
     Provides the common fields every model has via BaseModel.

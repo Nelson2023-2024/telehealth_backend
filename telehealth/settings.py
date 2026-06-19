@@ -17,7 +17,6 @@ DEBUG = os.getenv("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = ["*"]
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -68,17 +67,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "telehealth.wsgi.application"
 
-
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "Telehealth",
+        "USER": "postgres",
+        "PASSWORD": "root",
+        "HOST": "localhost",
+        "PORT": "5432",
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -98,7 +99,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
@@ -109,7 +109,6 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
@@ -124,8 +123,10 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(
         days=7
     ),  # The refresh token lives for 7 days. It's used to get a new access token without re-logging in.
-    "ROTATE_REFRESH_TOKENS": True,  # Every time you use a refresh token to get a new access token, you also get a brand new refresh token. The old one becomes invalid.
-    "BLACKLIST_AFTER_ROTATION": True,  # Works with the above — the old refresh token is added to a blacklist so it can't be reused, even if someone intercepts it.
+    "ROTATE_REFRESH_TOKENS": True,
+    # Every time you use a refresh token to get a new access token, you also get a brand new refresh token. The old one becomes invalid.
+    "BLACKLIST_AFTER_ROTATION": True,
+    # Works with the above — the old refresh token is added to a blacklist so it can't be reused, even if someone intercepts it.
     "UPDATE_LAST_LOGIN": True,  # Updates the last_login field in the User model every time someone logs in via JWT.
 }
 AUTH_USER_MODEL = "authentication.User"

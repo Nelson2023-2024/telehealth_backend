@@ -25,7 +25,7 @@ class Speciality(GenericBaseModel):
     icon = models.CharField(max_length=50, blank=True, null=True)
 
     class Meta:
-        verbose_plural_name = "Specialties"
+        verbose_name_plural = "Specialties"
         db_table = "specialities"
         ordering = ["name"]
 
