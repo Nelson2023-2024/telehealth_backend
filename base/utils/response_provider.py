@@ -24,7 +24,7 @@ class ResponseProvider:
 
     @staticmethod
     def _response(
-        success: bool, code: str, message: str, status: int, data=None, error=None
+            success: bool, code: str, message: str, status: int, data=None, error=None
     ) -> Response:
         if data is None:
             data = {}
@@ -125,65 +125,66 @@ class ResponseProvider:
         )
 
     @classmethod
-    def bad_request(cls, code="400.000", message="Bad Request", error=None):
+    def bad_request(cls, code="400.000", message="Bad Request", error=None, data=None):
         return cls._response(
-            False, code, message, http_status.HTTP_400_BAD_REQUEST, error=error
+            False, code, message, http_status.HTTP_400_BAD_REQUEST, error=error, data=data
         )
 
     @classmethod
-    def unauthorized(cls, code="401.000", message="Unauthorized", error=None):
+    def unauthorized(cls, code="401.000", message="Unauthorized", error=None, data=None):
         return cls._response(
-            False, code, message, http_status.HTTP_401_UNAUTHORIZED, error=error
+            False, code, message, http_status.HTTP_401_UNAUTHORIZED, error=error, data=data
         )
 
     @classmethod
-    def forbidden(cls, code="403.000", message="Forbidden", error=None):
+    def forbidden(cls, code="403.000", message="Forbidden", error=None, data=None):
         return cls._response(
-            False, code, message, http_status.HTTP_403_FORBIDDEN, error=error
+            False, code, message, http_status.HTTP_403_FORBIDDEN, error=error, data=data
         )
 
     @classmethod
-    def not_found(cls, code="404.000", message="Resource Not Found", error=None):
+    def not_found(cls, code="404.000", message="Resource Not Found", error=None, data=None):
         return cls._response(
-            False, code, message, http_status.HTTP_404_NOT_FOUND, error=error
+            False, code, message, http_status.HTTP_404_NOT_FOUND, error=error, data=data
         )
 
     @classmethod
-    def conflict(cls, code="409.000", message="Conflict", error=None):
+    def conflict(cls, code="409.000", message="Conflict", error=None, data=None):
         return cls._response(
-            False, code, message, http_status.HTTP_409_CONFLICT, error=error
+            False, code, message, http_status.HTTP_409_CONFLICT, error=error, data=data
         )
 
     @classmethod
     def too_many_requests(
-        cls, code="429.000", message="Rate Limit Exceeded", error=None
+            cls, code="429.000", message="Rate Limit Exceeded", error=None, data=None
     ):
         return cls._response(
-            False, code, message, http_status.HTTP_429_TOO_MANY_REQUESTS, error=error
+            False, code, message, http_status.HTTP_429_TOO_MANY_REQUESTS, error=error, data=data
         )
 
     @classmethod
-    def server_error(cls, code="500.000", message="Internal Server Error", error=None):
+    def server_error(cls, code="500.000", message="Internal Server Error", error=None, data=None):
         return cls._response(
             False,
             code,
             message,
             http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             error=error,
+            data=data
         )
 
     @classmethod
-    def not_implemented(cls, code="501.000", message="Not Implemented", error=None):
+    def not_implemented(cls, code="501.000", message="Not Implemented", error=None, data=None):
         return cls._response(
-            False, code, message, http_status.HTTP_501_NOT_IMPLEMENTED, error=error
+            False, code, message, http_status.HTTP_501_NOT_IMPLEMENTED, error=error, data=data
         )
 
     @classmethod
     def service_unavailable(
-        cls, code="503.000", message="Service Unavailable", error=None
+            cls, code="503.000", message="Service Unavailable", error=None, data=None
     ):
         return cls._response(
-            False, code, message, http_status.HTTP_503_SERVICE_UNAVAILABLE, error=error
+            False, code, message, http_status.HTTP_503_SERVICE_UNAVAILABLE, error=error, data=data
         )
 
     @classmethod
@@ -194,7 +195,7 @@ class ResponseProvider:
 
     @classmethod
     def paginated(
-        cls, queryset, request, serializer_class, code="200.000", message="Success"
+            cls, queryset, request, serializer_class, code="200.000", message="Success",
     ):
         """
         Wraps DRF pagination into the standard response shape.
@@ -220,7 +221,7 @@ class ResponseProvider:
 
     @classmethod
     def validation_error(
-        cls, serializer_errors, code="400.001", message="Validation failed"
+            cls, serializer_errors, code="400.001", message="Validation failed", data=None
     ):
         """
         Specifically for DRF serializer.errors — flattens them into a readable format.
@@ -230,5 +231,5 @@ class ResponseProvider:
             flattened[field] = errors[0] if isinstance(errors, list) else str(errors)
 
         return cls._response(
-            False, code, message, http_status.HTTP_400_BAD_REQUEST, error=flattened
+            False, code, message, http_status.HTTP_400_BAD_REQUEST, error=flattened, data=data
         )
