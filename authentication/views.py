@@ -26,6 +26,7 @@ from .serializers import (
 from .services.auth_service import AuthenticationOrchestrator
 from .services.email_verification_service import EmailVerificationOrchestrator
 from base.utils.response_provider import ResponseProvider
+from base.services.services import UserService
 
 User = get_user_model()
 
@@ -160,7 +161,7 @@ def validate_token(request: Request):
             },
         )
     except Exception as ex:
-        return ResponseProvider.bad_request(
+        return ResponseProvider.unauthorized(
             message="Token validation failed", error=str(ex)
         )
 
@@ -168,4 +169,108 @@ def validate_token(request: Request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def user_profile(request: Request):
-    return ResponseProvider().success(data={"user": UserSerializer(request.user).data})
+    return ResponseProvider.success(data={"user": UserSerializer(request.user).data})
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def token_refresh_custom(request: Request):
+    try:
+        refresh_token = request.data.get("refresh_token")
+
+        if not refresh_token:
+            return ResponseProvider.bad_request(error="Refresh token is required")
+
+        try:
+            refresh = RefreshToken(refresh_token)
+            access_token = str(refresh.access_token)
+
+            user_id = refresh.payload.get("user_id")
+
+            user = UserService().get(id=user_id)
+
+            AuthenticationOrchestrator.update_user_status(user, is_online=True)
+
+            return ResponseProvider.success(
+                data={"access": access_token, "user": UserSerializer(user).data}
+            )
+        except (TokenError, InvalidToken, User.DoesNotExist) as ex:
+            return ResponseProvider.unauthorized(
+                error=str(ex), message="Invalid refresh token"
+            )
+    except Exception as ex:
+        return ResponseProvider.server_error(
+            error=str(ex), message="Token refresh failed"
+        )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def verify_email(request: Request):
+    try:
+        serializer = EmailVerificationSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return ResponseProvider.validation_error(serializer.errors)
+
+        token = serializer.validated_data["token"]
+
+        user, error = EmailVerificationOrchestrator.verify_email_token(token)
+
+        if not user:
+            return ResponseProvider.bad_request(error=error)
+
+        return ResponseProvider.success(
+            message="Email verified successfully",
+            data={
+                "user": UserSerializer(user).data,
+            },
+        )
+
+    except Exception as ex:
+        return ResponseProvider.handle_exception(ex)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def resend_verification_email(request):
+    try:
+        serializer = ResendVerificationSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return ResponseProvider.validation_error(serializer.errors)
+
+        email = serializer.validated_data["email"]
+
+        user = UserService().get(email=email)
+
+        if user is None:
+            return ResponseProvider.not_found(error="User with this email not found")
+
+        success, message = EmailVerificationOrchestrator.resend_verification_email(user)
+
+        if success:
+            return ResponseProvider.success(message=message, data={"email_sent": True})
+        return ResponseProvider.bad_request(
+            error=message,
+            data={"email_sent": False}
+        )
+    except User.DoesNotExist:
+        return ResponseProvider.not_found(error="User with this email not found")
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def send_verification_email_authenticated(request: Request):
+    user = request.user
+
+    if user.is_verified:
+        return ResponseProvider.bad_request(
+            error="Email is already verified",
+            data={"email_sent": False}
+        )
+
+    success, message = EmailVerificationOrchestrator.resend_verification_email(user)
+    if success:
+        return ResponseProvider.success(message=message, data={"email_sent": True})
+    return ResponseProvider.bad_request(error=message, data={"email_sent": False})
