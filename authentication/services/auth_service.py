@@ -74,7 +74,7 @@ class AuthenticationOrchestrator:
             if user is None:
                 return None, "Invalid email or password"  # vague on purpose — security
 
-            if not user.is_active and user.state.code != "Active":
+            if not user.is_active or (user.state is None or user.state.code != "active"):
                 return None, "Account is disabled, contact support"
 
             # Verify password
