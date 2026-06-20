@@ -4,6 +4,13 @@ from django.utils.translation import gettext_lazy as _
 
 
 # Create your models here.
+def get_default_state():
+    """Lazily imports State to avoid circular reference at module load time."""
+    from base.models import State
+
+    return State.default_state()
+
+
 class BaseModel(models.Model):
     id = models.UUIDField(
         primary_key=True, default=uuid.uuid4, editable=False, verbose_name=_("ID")
@@ -19,6 +26,7 @@ class BaseModel(models.Model):
         related_name="%(class)s_records",
         verbose_name=_("State"),
         help_text=_("The current state of this record"),
+        default=get_default_state,
     )
 
     class Meta:
@@ -36,9 +44,12 @@ class GenericBaseModel(BaseModel):
         blank=True, null=True, max_length=30, verbose_name=_("Name")
     )
     code = models.CharField(
-        blank=True, null=True, max_length=30, unique=True,
+        blank=True,
+        null=True,
+        max_length=30,
+        unique=True,
         verbose_name=_("Code"),
-        help_text=_("Stable identifier for lookups, unaffected by renaming 'name'")
+        help_text=_("Stable identifier for lookups, unaffected by renaming 'name'"),
     )
     description = models.TextField(
         max_length=255, blank=True, null=True, verbose_name=_("Description")
@@ -58,6 +69,8 @@ class State(GenericBaseModel):
     Stored in the database so new states can be added without schema changes.
     """
 
+    state = None
+
     class Meta:
         db_table = "states"
         ordering = ("name",)
@@ -71,7 +84,9 @@ class State(GenericBaseModel):
         Creates it if it doesn't exist yet.
         """
         state, created = cls.objects.get_or_create(
-            name="Active", defaults={"description": "Record is active and operational"}
+            name="Active",
+            code="active",
+            defaults={"description": "Record is active and operational"},
         )
         return state.id
 
@@ -83,6 +98,7 @@ class State(GenericBaseModel):
         """
         state, created = cls.objects.get_or_create(
             name="Disabled",
+            code="disabled",
             defaults={"description": "Record is disabled and no longer operational"},
         )
         return state.id
