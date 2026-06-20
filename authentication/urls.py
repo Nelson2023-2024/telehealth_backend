@@ -15,6 +15,9 @@ urlpatterns = [
         name="validate_token",
     ),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path(
+        "token/refresh/custom", views.token_refresh_custom, name="token_refresh_custom"
+    ),
     # User
     path(
         "profile/",
