@@ -78,3 +78,57 @@ class EmailVerificationOrchestrator:
         except Exception as e:
             logger.error(f"An error occurred sending verification email to {user}: {e}")
             return False
+
+    @staticmethod
+    def verify_email_token(token):
+        try:
+            verification_token = EmailVerificationTokenService().get(token=token)
+            
+            if verification_token is None:
+                return None, "Invalid verification link"
+
+            if not verification_token.is_valid():
+                if verification_token.is_expired():
+                    return None, "Verification link has expired"
+                else:
+                    return None, "Verification link has already been used"
+
+            verification_token.is_used = True
+            verification_token.save()
+
+            user = verification_token.user
+            user.mark_email_verified()
+
+            logger.info(f"Email verified successfully for user: {user.email}")
+            return user, None
+        except EmailVerificationToken.DoesNotExist:
+            logger.warning(f"Invalid verification token: {token}")
+            return None, "Invalid verification link"
+        except Exception as ex:
+            logger.error(f"Email verification failed for token {token}: {str(ex)}")
+            return None, f"Verification failed: {str(ex)}"
+
+    @staticmethod
+    def resend_verification_email(user: User):
+        if user.is_verified:
+            return False, "Email is already verified"
+
+        recent_tokens = (
+            EmailVerificationTokenService()
+            .filter(
+                user=user,
+                created_at__gte=timezone.now() - timezone.timedelta(minutes=5),
+            )
+            .count()
+        )
+
+        if recent_tokens > 3:
+            return (
+                False,
+                "Too many verification emails sent. Please wait before requesting another",
+            )
+        success = EmailVerificationOrchestrator.send_verification_email(user)
+
+        if success:
+            return True, "Verification email sent successfully"
+        return False, "Failed to send verification email"
