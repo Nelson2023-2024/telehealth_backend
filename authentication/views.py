@@ -251,10 +251,7 @@ def resend_verification_email(request):
 
         if success:
             return ResponseProvider.success(message=message, data={"email_sent": True})
-        return ResponseProvider.bad_request(
-            error=message,
-            data={"email_sent": False}
-        )
+        return ResponseProvider.bad_request(error=message, data={"email_sent": False})
     except User.DoesNotExist:
         return ResponseProvider.not_found(error="User with this email not found")
 
@@ -266,8 +263,7 @@ def send_verification_email_authenticated(request: Request):
 
     if user.is_verified:
         return ResponseProvider.bad_request(
-            error="Email is already verified",
-            data={"email_sent": False}
+            error="Email is already verified", data={"email_sent": False}
         )
 
     success, message = EmailVerificationOrchestrator.resend_verification_email(user)
