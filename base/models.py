@@ -35,6 +35,11 @@ class GenericBaseModel(BaseModel):
     name = models.CharField(
         blank=True, null=True, max_length=30, verbose_name=_("Name")
     )
+    code = models.CharField(
+        blank=True, null=True, max_length=30, unique=True,
+        verbose_name=_("Code"),
+        help_text=_("Stable identifier for lookups, unaffected by renaming 'name'")
+    )
     description = models.TextField(
         max_length=255, blank=True, null=True, verbose_name=_("Description")
     )
@@ -84,7 +89,6 @@ class State(GenericBaseModel):
 
 
 class Country(GenericBaseModel):
-
     class Meta:
         abstract = False
         db_table = "countries"
