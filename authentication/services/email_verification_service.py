@@ -1,5 +1,7 @@
 from django.contrib.auth import authenticate
 from django.core.cache import cache
+from datetime import timedelta
+
 from django.utils import timezone
 
 from base.services.services import (
@@ -83,7 +85,7 @@ class EmailVerificationOrchestrator:
     def verify_email_token(token):
         try:
             verification_token = EmailVerificationTokenService().get(token=token)
-            
+
             if verification_token is None:
                 return None, "Invalid verification link"
 
@@ -110,25 +112,34 @@ class EmailVerificationOrchestrator:
 
     @staticmethod
     def resend_verification_email(user: User):
-        if user.is_verified:
-            return False, "Email is already verified"
+        try:
+            if user.is_verified:
+                return False, "Email is already verified"
 
-        recent_tokens = (
-            EmailVerificationTokenService()
-            .filter(
+            recent_tokens = EmailVerificationTokenService().filter(
                 user=user,
-                created_at__gte=timezone.now() - timezone.timedelta(minutes=5),
+                created_at__gte=timezone.now() - timedelta(minutes=5),
+                active_only=False,
             )
-            .count()
-        )
 
-        if recent_tokens > 3:
-            return (
-                False,
-                "Too many verification emails sent. Please wait before requesting another",
+            if recent_tokens is None:
+                logger.error(f"DB error checking recent tokens for {user.email}")
+                return False, "Something went wrong, please try again"
+
+            if recent_tokens.count() > 3:
+                return (
+                    False,
+                    "Too many verification emails sent recently. Please wait a few minutes before requesting another",
+                )
+
+            success = EmailVerificationOrchestrator.send_verification_email(user)
+
+            if success:
+                return True, "Verification email sent successfully"
+            return False, "Failed to send verification email"
+
+        except Exception as ex:
+            logger.exception(
+                f"Failed to resend verification email for {user.email}: {ex}"
             )
-        success = EmailVerificationOrchestrator.send_verification_email(user)
-
-        if success:
-            return True, "Verification email sent successfully"
-        return False, "Failed to send verification email"
+            return False, "An unexpected error occurred"
