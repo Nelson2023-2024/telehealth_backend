@@ -28,7 +28,9 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-        extra_fields.setdefault("role", "admin")
+
+        admin_role, _ = Role.objects.get_or_create(name="Admin")
+        extra_fields.setdefault("role", admin_role)
         return self.create_user(email, password, **extra_fields)
 
     def get_patients(self):
@@ -61,6 +63,9 @@ class Role(GenericBaseModel):
         db_table = "roles"
         verbose_name = _("Role")
         verbose_name_plural = _("Roles")
+
+    def __str__(self):
+        return self.name
 
 
 class User(AbstractBaseUser, PermissionsMixin, BaseModel):
