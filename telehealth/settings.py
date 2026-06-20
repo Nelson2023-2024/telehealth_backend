@@ -145,6 +145,8 @@ REST_FRAMEWORK = {
     # Controls the format of API responses. JSONRenderer means all responses come back as JSON only — no browsable HTML API.
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
+        "rest_framework.renderers.BrowsableAPIRenderer"
+
     ],
     # Rate limiting — prevents abuse/spam of your API.
     "DEFAULT_THROTTLE_CLASSES": [
