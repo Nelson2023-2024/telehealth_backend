@@ -35,12 +35,12 @@ class EmailVerificationOrchestrator:
                 # Create a new token
                 verification_token = EmailVerificationTokenService().create(user=user)
                 if verification_token is None:
-                    logger.error(f"Failed to create verification token for {user.email}")
+                    logger.error(
+                        f"Failed to create verification token for {user.email}"
+                    )
                     return False
 
-                subject = (
-                    f'Verify your Email - {getattr(settings, "APP_NAME", "Telehealth App")}'
-                )
+                subject = f'Verify your Email - {getattr(settings, "APP_NAME", "Telehealth App")}'
                 print(subject)
 
                 verification_url = f"{getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')}/verify-email?token={verification_token.token}"
