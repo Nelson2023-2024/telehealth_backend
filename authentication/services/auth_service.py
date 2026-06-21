@@ -15,6 +15,7 @@ import logging
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -23,46 +24,58 @@ class AuthenticationOrchestrator:
     @staticmethod
     def register_user(email, password, first_name, last_name, role="patient"):
         try:
-            # Check if user exists
-            existing = UserService().filter(email=email)
-            if existing is None:
-                # filter() returned None — means a DB error occurred
-                logger.error(f"[Register] DB error checking existing user: {email}")
-                return None, "Something went wrong, please try again"
+            with transaction.atomic():
+                # Check if user exists
+                existing = UserService().filter(email=email)
+                if existing is None:
+                    # filter() returned None — means a DB error occurred
+                    logger.error(f"[Register] DB error checking existing user: {email}")
+                    return None, "Something went wrong, please try again"
 
-            if existing.exists():
-                return None, "User with this email already exists"
+                if existing.exists():
+                    return None, "User with this email already exists"
 
-            # Create user
-            user = UserService().create_user(
-                email=email,
-                password=password,
-                first_name=first_name,
-                last_name=last_name,
-                role=role,
-            )
+                from authentication.models import Role
+                role_obj, created = Role.objects.get_or_create(
+                    # code=role.lower(),
+                    defaults={"name": role.title()}
+                )
 
-            if user is None:
-                # create_user() returned None — means creation failed
-                logger.error(f"[Register] Failed to create user: {email}")
-                return None, "Failed to create account, please try again"
+                if created:
+                    logger.info(f"[Register] Role '{role}' did not exist — created automatically")
 
-            # Create consultant profile if needed
-            if role == "consultant":
-                profile = ConsultantProfileService().create(user=user)
-                if profile is None:
-                    logger.error(
-                        f"[Register] Failed to create consultant profile for: {email}"
-                    )
-                    # User was created but profile failed
-                    # You may want to delete the user here or handle this case
-                    return None, "Failed to create consultant profile"
+                # Create user
+                user = UserService().create_user(
+                    email=email,
+                    password=password,
+                    first_name=first_name,
+                    last_name=last_name,
+                    role=role_obj,
+                )
 
-            logger.info(
-                f"[Register] User registered successfully: {email} with role {role}"
-            )
-            return user, None
+                if user is None:
+                    # create_user() returned None — means creation failed
+                    logger.error(f"[Register] Failed to create user: {email}")
+                    return None, "Failed to create account, please try again"
 
+                # Create consultant profile if needed
+                if role == "consultant":
+                    profile = ConsultantProfileService().create(user=user)
+                    if profile is None:
+                        logger.error(
+                            f"[Register] Failed to create consultant profile for: {email}"
+                        )
+                        # User was created but profile failed
+                        # You may want to delete the user here or handle this case
+                        return None, "Failed to create consultant profile"
+
+                logger.info(
+                    f"[Register] User registered successfully: {email} with role {role}"
+                )
+                return user, None
+        except ValueError as ve:
+            # Everything inside the `with transaction.atomic()` block gets rolled back
+            return None, str(ve)
         except Exception as e:
             logger.exception(f"[Register] Unexpected error for {email}: {e}")
             return None, str(e)
@@ -75,7 +88,7 @@ class AuthenticationOrchestrator:
                 return None, "Invalid email or password"  # vague on purpose — security
 
             if not user.is_active or (
-                user.state is None or user.state.code != "active"
+                    user.state is None or user.state.code != "active"
             ):
                 return None, "Account is disabled, contact support"
 
