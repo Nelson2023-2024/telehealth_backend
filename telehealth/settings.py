@@ -53,7 +53,7 @@ ROOT_URLCONF = "telehealth.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / 'templates'],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -114,14 +114,18 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-] if (BASE_DIR / 'static').exists() else []
+STATICFILES_DIRS = (
+    [
+        BASE_DIR / "static",
+    ]
+    if (BASE_DIR / "static").exists()
+    else []
+)
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # MEDIA files
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # JWT configuration
 SIMPLE_JWT = {
@@ -179,8 +183,8 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Email configuration
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = ENV.EMAIL_HOST_USER
