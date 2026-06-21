@@ -44,7 +44,8 @@ class UserProfileSignalHandler:
                     PatientProfileService().create(user=instance)
                     logger.info(f"Created patient profile for user {instance.id}")
 
-                elif instance.role == "consultant":
+
+                elif instance.role and instance.role.code == "consultant":
                     from base.services.services import ConsultantProfileService
 
                     ConsultantProfileService().create(user=instance)
