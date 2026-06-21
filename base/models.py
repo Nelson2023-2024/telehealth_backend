@@ -62,6 +62,11 @@ class GenericBaseModel(BaseModel):
     def __str__(self):
         return "%s" % self.name
 
+    def save(self, *args, **kwargs):
+        if not self.code and self.name:
+            self.code = self.name.lower().strip().replace(" ", "_")
+        super().save(*args, **kwargs)
+
 
 class State(GenericBaseModel):
     """
