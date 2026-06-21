@@ -4,6 +4,8 @@ from base.services.services import UserService
 from .models import User
 from typing import Dict, Any
 from base.serializers import BaseModelSerializer
+from django.core.validators import validate_email as django_validate_email
+from django.core.exceptions import ValidationError as DjangoValidationError
 
 """
 Job 1 — incoming data (request): JSON → Python/Django object
@@ -52,8 +54,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     # validate_<fieldname>() — validates a single field
     def validate_email(self, value):
-        if "gmail" not in value:
-            raise serializers.ValidationError("Only Gmail addresses allowed")
+        try:
+            django_validate_email(value)
+        except DjangoValidationError:
+            raise serializers.ValidationError("Enter a valid email address")
         return value
 
     def validate_password(self, value):
@@ -72,6 +76,7 @@ class UserSerializer(BaseModelSerializer):
     full_name = serializers.ReadOnlyField()
     # SerializerMethodField lets you add a custom computed field that doesn't exist directly on the model.
     has_verified_email = serializers.SerializerMethodField()
+    role_code = serializers.CharField(source="role.code", read_only=True)
 
     class Meta:
         model = User
@@ -80,7 +85,7 @@ class UserSerializer(BaseModelSerializer):
             "first_name",
             "last_name",
             "full_name",
-            "role",
+            "role_code",
             "is_online",
             "is_staff",
             "has_verified_email",
