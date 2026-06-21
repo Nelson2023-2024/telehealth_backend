@@ -41,17 +41,13 @@ class UserManager(BaseUserManager):
 
 
 class Permission(GenericBaseModel):
-    code = models.CharField(
-        max_length=100,
-        unique=True,
-        verbose_name=_("Permission Code"),
-        help_text=_("e.g. can_view_users, can_manage_appointments"),
-    )
-
     class Meta:
         db_table = "permissions"
         verbose_name = _("Permission")
         verbose_name_plural = _("Permissions")
+
+    def __str__(self):
+        return self.name
 
 
 class Role(GenericBaseModel):
