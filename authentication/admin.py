@@ -11,7 +11,12 @@ from .models import (
 
 @admin.register(Permission)
 class PermissionAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "is_active", "state__code", "code")
+    list_display = (
+        "name",
+        "code",
+        "is_active",
+        "state__code",
+    )
     search_fields = ("name", "code")
     ordering = ("name",)
 
