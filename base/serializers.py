@@ -28,7 +28,7 @@ class BaseModelSerializer(serializers.ModelSerializer):
 
     class Meta:
         abstract = True
-        fields = ["id", "is_active", "state", "state_name", "created_at", "updated_at"]
+        fields = ["id", "is_active", "state_name", "created_at", "updated_at"]
 
 
 class GenericBaseModelSerializer(BaseModelSerializer):
