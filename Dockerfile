@@ -16,6 +16,9 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
+    # . -> /app -> ./
+COPY requirements.txt .
+
 # . -> /app -> ./
 # -> built time: install/upgrade pip, then install dependencies.
 # --no-cache-dir stops pip from keeping downloaded package files on disk, keeping the image smaller.

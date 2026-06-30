@@ -1,0 +1,100 @@
+name: 'telehealthbackend'
+
+services:
+   # ── Django app ──────────────────────────────────────────
+  telehealthbackend-backend:
+    image: telehealthbackend-image
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    volumes:
+      - ./:/app # bind mount: syncs local code into the container live, no rebuild needed for code changes
+    ports:
+      - 8000:8000
+    env_file:
+      - ./.env
+    depends_on:
+      telehealthbackend-db:
+        condition: service_started
+      telehealthbackend-redis-task-broker:
+        condition: service_started
+    healthcheck:
+      test:  ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 10s
+    networks:
+      - telehealthbackend_net
+
+
+  # ── Postgres ──────────────────────────────────────────
+  telehealthbackend-db:
+    image: postgres:18
+    restart: always
+    container_name: telehealthbackend-postgres-container
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_DB=${DB_PASSWORD}
+    ports:
+      - 5433:5432
+    volumes:
+      -  postgres_data:/var/lib/postgresql/18/docker # named volume to store my data for peristence
+    networks:
+      - telehealthbackend_net
+
+   # ── Redis Broker ──────────────────────────────────────
+  telehealthbackend-redis-task-broker:
+    image: redis:8.2-alpine
+    container_name: telehealthbackend-redis-task-broker
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - telehealthbackend_net
+
+  # ── Celery Worker ─────────────────────────────────────
+  celery:
+    build: .
+    command: python -m celery -A telehealthbackend worker -l info
+    restart: always
+    volumes:
+      - .:/app
+    depends_on:
+      - telehealthbackend-redis-task-broker
+      - telehealthbackend-db
+    env_file:
+      - .env
+    networks:
+      - telehealthbackend_net
+
+   # ── Flower — Celery monitor UI ────────────────────────
+  flower:
+    build: .
+    command: python -m celery -A telehealthbackend flower --port=5555
+    restart: always
+    ports:
+      - "5555:5555"
+    depends_on:
+      - telehealthbackend-redis-task-broker
+      - celery
+    env_file:
+      - .env
+    networks:
+      - telehealthbackend_net
+
+volumes:
+  postgres_data: # named volume — Docker manages this; survives container rebuilds/restarts
+  redis_data:
+ 
+networks:
+  telehealthbackend_net: # explicit network so all services resolve each other by service name
+
+
+    
+
+  
