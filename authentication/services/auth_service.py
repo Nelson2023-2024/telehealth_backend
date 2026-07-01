@@ -38,8 +38,7 @@ class AuthenticationOrchestrator:
                 from authentication.models import Role
 
                 role_obj, created = Role.objects.get_or_create(
-                    code=role.lower(),
-                    defaults={"name": role.title()}
+                    code=role.lower(), defaults={"name": role.title()}
                 )
 
                 if created:
@@ -91,7 +90,7 @@ class AuthenticationOrchestrator:
                 return None, "Invalid email or password"  # vague on purpose — security
 
             if not user.is_active or (
-                    user.state is None or user.state.code != "active"
+                user.state is None or user.state.code != "active"
             ):
                 return None, "Account is disabled, contact support"
 
