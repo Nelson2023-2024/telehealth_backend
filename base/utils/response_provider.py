@@ -12,6 +12,7 @@ from rest_framework.exceptions import (
     Throttled,
     MethodNotAllowed,
 )
+from rest_framework.pagination import PageNumberPagination
 
 logger = logging.getLogger(__name__)
 
@@ -226,6 +227,11 @@ class ResponseProvider:
             True, code, message, http_status.HTTP_204_NO_CONTENT, data=None
         )
 
+    class StandardPagination(PageNumberPagination):
+        page_size = 20
+        page_size_query_param = "page_size"
+        max_page_size = 100
+
     @classmethod
     def paginated(
         cls,
@@ -238,9 +244,7 @@ class ResponseProvider:
         """
         Wraps DRF pagination into the standard response shape.
         """
-        from rest_framework.pagination import PageNumberPagination
-
-        paginator = PageNumberPagination()
+        paginator = cls.StandardPagination()
         page = paginator.paginate_queryset(queryset, request)
         serializer = serializer_class(page, many=True)
 

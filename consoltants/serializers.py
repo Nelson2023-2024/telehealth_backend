@@ -18,6 +18,7 @@ class SpecialitySerializer(GenericBaseModelSerializer):
         fields = GenericBaseModelSerializer.Meta.fields + ["icon"]
 
 
+# Whenever a Django field has choices=, Django auto-generates a method called get_<field_name>_display()
 class ConsultantAvailabilitySerializer(BaseModelSerializer):
     day_name = serializers.CharField(source="get_day_of_week_display", read_only=True)
 
@@ -36,7 +37,7 @@ class ConsultantReviewSerializer(BaseModelSerializer):
 
     class Meta:
         model = ConsultantReview
-        fields = [
+        fields = BaseModelSerializer.Meta.fields + [
             "patient_name",
             "rating",
             "review_text",
@@ -44,7 +45,7 @@ class ConsultantReviewSerializer(BaseModelSerializer):
             "is_anonymous",
         ]
 
-    def get_patient_name(self, obj: User):
+    def get_patient_name(self, obj: ConsultantReview):
         if obj.is_anonymous:
             return "Anonymous"
         return obj.patient.full_name
@@ -85,7 +86,7 @@ class ConsultantProfileListSerializer(BaseModelSerializer):
             "is_featured",
         ]
 
-    def get_avatar_url(self, obj):
+    def get_avatar_url(self, obj: ConsultantProfile):
         if obj.avatar:
             request = self.context.get("request")
             return (
